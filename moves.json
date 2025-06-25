@@ -1,0 +1,248 @@
+{
+  "dame": {
+    "called_name": "Dame",
+    "description": "Leader releases partner and picks up the next partner in the circle.",
+    "level": [
+      "beginner",
+      2
+    ],
+    "change_partner": 1,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "otra": {
+    "called_name": "Otra",
+    "description": "Special move only callable directly after Dame.",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 1,
+    "precondition": "closed_position",
+    "postcondition": "open_position",
+    "beat_count": 8,
+    "requires": [
+      "dame"
+    ]
+  },
+  "enchufla_y_vamos_pal_centro": {
+    "called_name": "Enchufla y vamos pa'l centro",
+    "description": "Send partner to the center of the circle.",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 1,
+    "precondition": "open_position",
+    "postcondition": "center_formation",
+    "beat_count": 8
+  },
+  "el_flor": {
+    "called_name": "El flor",
+    "description": "Dancers form a flower pattern in the center.",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "center_formation",
+    "postcondition": "linked_hands",
+    "beat_count": 8,
+    "requires": [
+      "enchufla_y_vamos_pal_centro"
+    ]
+  },
+  "enganchan_los_hombres": {
+    "called_name": "Enganchan los hombres",
+    "description": "Men hook arms in the center.",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "linked_hands",
+    "postcondition": "hooked_men",
+    "beat_count": 4,
+    "requires": [
+      "el_flor"
+    ]
+  },
+  "enganchan_las_chicas": {
+    "called_name": "Enganchan las chicas",
+    "description": "Women hook arms into the circle.",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "hooked_men",
+    "postcondition": "closed_position",
+    "beat_count": 4,
+    "requires": [
+      "enganchan_los_hombres"
+    ],
+    "must_be_followed_by": [
+      "dile_que_no"
+    ]
+  },
+  "dile_que_no": {
+    "called_name": "Dile Que No",
+    "description": "Leader moves follower from closed to open position.",
+    "level": [
+      "beginner",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "closed_position",
+    "postcondition": "open_position",
+    "beat_count": 8
+  },
+  "exhibela": {
+    "called_name": "Exhibela",
+    "description": "A move where the leader shows off the follower's styling by turning them into the circle.",
+    "level": [
+      "beginner",
+      2
+    ],
+    "change_partner": 0,
+    "precondition": "closed_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "enchufla": {
+    "called_name": "Enchufla",
+    "description": "The leader turns follower under their left arm and then does a Dame.",
+    "level": [
+      "beginner",
+      2
+    ],
+    "change_partner": 1,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "abajo": {
+    "called_name": "Abajo",
+    "description": "Leader steps in a Y formation and the follow does back-rocks.",
+    "level": [
+      "beginner",
+      2
+    ],
+    "change_partner": 0,
+    "precondition": "closed_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "setenta": {
+    "called_name": "Setenta",
+    "description": "A more advanced move involving cross-hand hold and turns.",
+    "level": [
+      "intermediate",
+      2
+    ],
+    "change_partner": 1,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 24
+  },
+  "arriba_tiempo_espana": {
+    "called_name": "Arriba Tiempo Espana",
+    "description": "Closed position move where the leads walk forward and the follows walk backwards",
+    "level": [
+      "beginner",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "closed_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "pal_medio": {
+    "called_name": "Pa'l Medio",
+    "description": "In closed position, step in and out of the circle",
+    "level": [
+      "beginner",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "closed_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "sacando_agua": {
+    "called_name": "Sacando Agua",
+    "description": "While in closed position, make a motion as if you are bailing water from the center of the circle",
+    "level": [
+      "beginner",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "closed_position",
+    "postcondition": "closed_position",
+    "beat_count": 8,
+    "requires": [
+      "pal_medio"
+    ]
+  },
+  "abajo_de_verdad": {
+    "called_name": "Abajo de verdad",
+    "description": "Same motion as Abajo, but the leads are moving backwards on the 2 and 6 and the follows are going forward on the 2 and 6",
+    "level": [
+      "beginner",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "closed_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "exhibela_doble": {
+    "called_name": "Exhibela Doble",
+    "description": "Do Exhibela twice",
+    "level": [
+      "beginner",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "closed_position",
+    "postcondition": "closed_position",
+    "beat_count": 16
+  },
+  "enchufla_doble": {
+    "called_name": "Enchufla doble",
+    "description": "Do enchufla, then instead of ending the move, block the follow with your right hand, then do another enchufla",
+    "level": [
+      "beginner",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 16
+  },
+  "dame_dos": {
+    "called_name": "Dame dos",
+    "description": "Dame, but go to the second follow instead of the next follow",
+    "level": [
+      "beginner",
+      1
+    ],
+    "change_partner": 1,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "dame_directo": {
+    "called_name": "Dame directo",
+    "description": "While in open position, make more tension on the 123 and then walk past the follow your left and land with the next follow on the 5",
+    "level": [
+      "beginner",
+      1
+    ],
+    "change_partner": 1,
+    "precondition": "open_position",
+    "postcondition": "open_position",
+    "beat_count": 8
+  }
+}

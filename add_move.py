@@ -45,9 +45,10 @@ def add_new_move(moves):
         print("Invalid level.")
         return
 
-    change_partner = input("Does this move change partner? (y/n): ").strip().lower() == "y"
+    change_partner = int(input("How many partners do you switch? (can be negative): ").strip())
     precondition = input("Enter precondition (e.g. open_position, closed_position): ").strip()
     postcondition = input("Enter postcondition (e.g. closed_position, open_position): ").strip()
+    beat_count = int(input("How many beats does this move last? ").strip())
 
     requires = prompt_user_choice("Does this move require any specific preceding moves?", list(moves.keys()))
     must_be_followed_by = prompt_user_choice("Must this move be followed by any specific move(s)?", list(moves.keys()))
@@ -59,7 +60,8 @@ def add_new_move(moves):
         "level": [difficulty_type[0], difficulty_level],
         "change_partner": change_partner,
         "precondition": precondition,
-        "postcondition": postcondition
+        "postcondition": postcondition,
+        "beat_count": beat_count
     }
     if requires:
         new_move["requires"] = requires

@@ -1,5 +1,8 @@
 import json
 import random
+import heapq
+from collections import deque
+from tqdm import tqdm
 
 class RuedaMoves:
     def __init__(self, filepath):
@@ -9,133 +12,240 @@ class RuedaMoves:
         self.previous_move = None
         self.current_move = "guapea"
         self.sequence_queue = []
+        self.recent_history = deque(maxlen=10)
+        self.song_duration_beats = 64  # default
+        self.locked_out_of_closed_closed = False
+        self.move_difficulty = "medium"  # affects dile_que_no weighting
 
     def load_moves(self, filepath):
         with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
 
-    def get_current_move_data(self):
-        return self.moves.get(self.current_move)
+    def set_difficulty(self):
+        difficulty_type = input("Select difficulty (beginner/intermediate/advanced): ").strip().lower()
+        try:
+            difficulty_level = int(input("Enter difficulty sub‑level (e.g. 1 or 2): ").strip())
+        except ValueError:
+            print("Invalid level. Defaulting to 1.")
+            difficulty_level = 1
+        anything_below = input("Include all easier levels too? (y/n): ").strip().lower() == "y"
 
-    def set_difficulty(self, difficulty_type, difficulty_level, anything_below=False):
         if anything_below:
             if isinstance(difficulty_level, list):
                 difficulty_level = max(difficulty_level)
             self.difficulty_levels_allowed = range(1, difficulty_level + 1)
-
             difficulty_types = {"beginner": 1, "intermediate": 2, "advanced": 3}
-            if isinstance(difficulty_type, list):
-                input_levels = [difficulty_types[d] for d in difficulty_type if d in difficulty_types]
-            else:
-                input_levels = [difficulty_types.get(difficulty_type)]
-
-            if input_levels:
-                highest_level = max(input_levels)
-                self.difficulty_types_allowed = [d for d, level in difficulty_types.items() if level <= highest_level]
-            else:
-                print("No valid difficulty levels provided.")
+            input_levels = [difficulty_types.get(difficulty_type)] if isinstance(difficulty_type, str) else []
+            highest_level = max(input_levels) if input_levels else 1
+            self.difficulty_types_allowed = [d for d, lvl in difficulty_types.items() if lvl <= highest_level]
         else:
-            self.difficulty_levels_allowed = difficulty_level if isinstance(difficulty_level, list) else [difficulty_level]
-            self.difficulty_types_allowed = difficulty_type if isinstance(difficulty_type, list) else [difficulty_type]
+            self.difficulty_levels_allowed = [difficulty_level]
+            self.difficulty_types_allowed = [difficulty_type]
+            
+        difficulty_setting = input("How often should 'dile que no' appear? (easy / medium / hard): ").strip().lower()
+        self.set_move_difficulty(difficulty_setting)
 
-    def queue_sequence(self, sequence):
-        if not sequence:
-            print("Empty sequence.")
-            return False
+    def set_move_difficulty(self, level: str):
+        if level not in {"easy", "medium", "hard"}:
+            raise ValueError("Invalid move difficulty: choose easy, medium, or hard.")
+        self.move_difficulty = level
 
-        for i in range(len(sequence) - 1):
-            current = sequence[i]
-            next_move = sequence[i + 1]
+    def generate_sequence(self, max_beats, method="astar"):
+        return self.generate_sequence_astar(max_beats)
+    
 
-            current_data = self.moves.get(current)
-            next_data = self.moves.get(next_move)
+    # -------------------------------------------------------------------------
+    # generate_sequence_astar(self, max_beats)
+    #
+    # This function generates a sequence of Rueda dance moves using an A* search
+    # strategy. The goal is to construct a path of moves whose total duration
+    # (in beats) fills the song's length (rounded to the nearest multiple of 8).
+    #
+    # The search explores valid transitions between moves, guided by a cost
+    # function that balances several factors:
+    #
+    #  - g: total beats already accumulated in the path
+    #  - h: heuristic estimating how many 8-beat moves remain
+    #  - recent_weight: penalizes moves that have occurred recently (within the
+    #    last 10 moves), with stronger penalties for more frequent repetition.
+    #    Grouped moves like "exhibela*" share a repetition penalty.
+    #  - bonus: encourages novelty by lowering the cost for new/unseen moves
+    #  - partner_pressure_weight: exponentially decreases the cost of
+    #    selecting "dile_que_no" the more partner-switching moves occur without
+    #    one, encouraging its use for structural flow and position resetting.
+    #
+    # Additional search constraints include:
+    #  - Moves must match allowed difficulty type and level
+    #  - Contextual rules such as preventing back-to-back repeats
+    #  - Transition logic must satisfy precondition/postcondition compatibility
+    #  - Special rules such as locked-out closed→closed after transitioning to
+    #    open position (except for exhibela moves), or maximum 10 chained
+    #    closed→closed moves at intermediate+ difficulty
+    #
+    # Once a valid sequence is found that fills the beat target, it is stored
+    # in self.sequence_queue for scheduled playback. If no such sequence is
+    # found under the given constraints, the function prints an error and returns
+    # an empty list.
+    # -------------------------------------------------------------------------
+    def generate_sequence_astar(self, max_beats):
+        def move_key(move_name: str) -> str:
+            if move_name.startswith("exhibela"):
+                return "exhibela"
+            return move_name
 
-            if not current_data or not next_data:
-                print(f"Invalid move name(s): {current} or {next_move}")
-                return False
+        frontier = []
+        heapq.heappush(frontier, (0, [self.current_move]))
 
-            if current_data["postcondition"] != next_data["precondition"]:
-                print(f"Invalid transition: {current} → {next_move} (postcondition mismatch)")
-                return False
+        seen = set()
+        g_scores = {}
+        pbar = tqdm(total=1, bar_format="{desc}: {percentage:3.0f}%")
 
-            if "requires" in next_data and current not in next_data["requires"]:
-                print(f"Invalid transition: {next_move} requires one of {next_data['requires']}, not {current}")
-                return False
+        while frontier:
+            cost, path = heapq.heappop(frontier)
+            path_key = tuple(path)
+            if path_key in seen:
+                continue
+            seen.add(path_key)
 
-            if "must_be_followed_by" in current_data and next_move not in current_data["must_be_followed_by"]:
-                print(f"{current} must be followed by one of: {current_data['must_be_followed_by']}")
-                return False
+            total_beats = sum(
+                8 if m == "guapea" else self.moves[m].get("beat_count", 8)
+                for m in path
+            )
 
-        self.sequence_queue.extend(sequence)
-        return True
+            key = (path[-1], total_beats)
+            if key in g_scores and g_scores[key] <= cost:
+                continue
+            g_scores[key] = cost
+
+            percent = (total_beats / max_beats) * 100
+            pbar.set_description(f"Searching (filled {percent:5.1f}%)")
+            pbar.refresh()
+
+            if total_beats > max_beats:
+                continue
+            if max_beats - total_beats < 8:
+                pbar.set_description("Sequence complete")
+                pbar.refresh()
+                pbar.close()
+                self.sequence_queue = path[1:]
+                return path
+
+            # Compute total change_partner since last dile_que_no
+            partner_change_sum = 0
+            for m in reversed(path):
+                if m == "dile_que_no":
+                    break
+                if m == "guapea":
+                    continue
+                partner_change_sum += self.moves.get(m, {}).get("change_partner", 0)
+
+            last_move = path[-1]
+            for next_move in self.get_valid_next_moves(last_move, path):
+                if len(path) >= 2 and path[-1] == next_move:
+                    continue  # avoid exact repeats
+
+                recent_keys = [move_key(m) for m in path[-10:]]
+                current_key = move_key(next_move)
+                count = recent_keys.count(current_key)
+                recent_weight = 25 * count if count > 0 else 1
+
+                used_moves = set(path)
+                bonus = -100 if next_move not in used_moves else 0
+
+                # Exponentially encourage dile_que_no based on partner changes and difficulty
+                if next_move == "dile_que_no":
+                    base = {"easy": 1.2, "medium": 1.5, "hard": 2.0}.get(self.move_difficulty, 1.5)
+                    partner_pressure_weight = 1 / (base ** partner_change_sum)
+                else:
+                    partner_pressure_weight = 1.0
+
+                next_beat = self.moves[next_move].get("beat_count", 8)
+                g = total_beats + next_beat
+                h = max(0, max_beats - g) // 8
+                f = (g + h * recent_weight + bonus) * partner_pressure_weight
+
+                heapq.heappush(frontier, (f, path + [next_move]))
+
+        pbar.set_description("❌ Sequence failed")
+        pbar.close()
+        return []
+
+    def get_valid_next_moves(self, move_name, path=None):
+        if move_name == "guapea":
+            return [
+                m_name for m_name, m_data in self.moves.items()
+                if m_data["precondition"] == "open_position"
+                and m_data["level"][0] in self.difficulty_types_allowed
+                and m_data["level"][1] in self.difficulty_levels_allowed
+                and m_data.get("called", True)
+            ]
+
+        path = path or []
+        move_data = self.moves.get(move_name)
+        valid = []
+
+        transitioned_to_open = any(
+            p in self.moves and
+            self.moves[p].get("precondition") == "closed_position" and
+            self.moves[p].get("postcondition") == "open_position"
+            for p in path
+        )
+
+        closed_chain = 0
+        for m in reversed(path):
+            if m not in self.moves:
+                break
+            mdata = self.moves[m]
+            if mdata.get("precondition") == "closed_position" and mdata.get("postcondition") == "closed_position":
+                closed_chain += 1
+            else:
+                break
+
+        at_intermediate_or_higher = any(
+            lvl in self.difficulty_types_allowed
+            for lvl in ["intermediate", "advanced"]
+        )
+
+        for m_name, m_data in self.moves.items():
+            if not m_data.get("called", True):
+                continue
+            if move_data["postcondition"] != m_data["precondition"]:
+                continue
+            if "requires" in m_data and move_name not in m_data["requires"]:
+                continue
+            if m_data["level"][0] not in self.difficulty_types_allowed:
+                continue
+            if m_data["level"][1] not in self.difficulty_levels_allowed:
+                continue
+            if "must_be_followed_by" in move_data and m_name not in move_data["must_be_followed_by"]:
+                continue
+            if path and path[-1] == m_name:
+                continue
+            if m_name == "dile_que_no" and path and path[-1] == "dile_que_no":
+                continue
+            if transitioned_to_open and (
+                m_data.get("precondition") == "closed_position" and
+                m_data.get("postcondition") == "closed_position"
+            ):
+                if not m_name.startswith("exhibela"):
+                    continue
+            if (
+                at_intermediate_or_higher and
+                closed_chain >= 10 and
+                m_data.get("precondition") == "closed_position" and
+                m_data.get("postcondition") == "closed_position"
+            ):
+                continue
+
+            valid.append(m_name)
+
+        return valid
 
     def choose_next_move(self):
         if self.sequence_queue:
             next_seq_move = self.sequence_queue.pop(0)
             self.previous_move = self.current_move
             self.current_move = next_seq_move
+            self.recent_history.append(self.current_move)
             return self.moves[next_seq_move]
-
-        # Handle simulated guapea as a valid open_position starter
-        if self.current_move == "guapea":
-            self.previous_move = "guapea"
-            valid_moves = [
-                name for name, data in self.moves.items()
-                if data["precondition"] == "open_position"
-                and data["level"][0] in self.difficulty_types_allowed
-                and data["level"][1] in self.difficulty_levels_allowed
-                and data.get("called", True)
-            ]
-            if valid_moves:
-                chosen = random.choice(valid_moves)
-                self.current_move = chosen
-                return self.moves[chosen]
-            else:
-                return None
-
-        current_move = self.moves.get(self.current_move)
-        if not current_move:
-            print(f"Move '{self.current_move}' not found.")
-            return None
-
-        possible_moves = []
-        for move_name, move_data in self.moves.items():
-            if not move_data.get("called", True):
-                continue
-            if current_move["postcondition"] != move_data["precondition"]:
-                continue
-            if "requires" in move_data and self.current_move not in move_data["requires"]:
-                continue
-            if move_data["level"][0] not in self.difficulty_types_allowed:
-                continue
-            if move_data["level"][1] not in self.difficulty_levels_allowed:
-                continue
-            if "must_be_followed_by" in current_move and move_name not in current_move["must_be_followed_by"]:
-                continue
-            possible_moves.append(move_name)
-
-        if possible_moves:
-            chosen = random.choice(possible_moves)
-            self.previous_move = self.current_move
-            self.current_move = chosen
-            return self.moves[chosen]
-        else:
-            return None
-
-
-# -------------------- Example usage --------------------
-
-if __name__ == "__main__":
-    rueda = RuedaMoves('moves.json')
-    rueda.set_difficulty("intermediate", 2, anything_below=True)
-
-    rueda.current_move = input("First move (lowercase with underscores): ").strip()
-
-    for i in range(20):
-        move_data = rueda.choose_next_move()
-        if move_data:
-            print(f"Next move: {move_data['called_name']}")
-            if move_data.get("change_partner", 0) > 0:
-                print("changed partner")
-        else:
-            print("No next move found that matches the difficulty criteria.")
+        return None

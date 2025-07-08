@@ -244,5 +244,200 @@
     "precondition": "open_position",
     "postcondition": "open_position",
     "beat_count": 8
+  },
+  "exhibela_2_con_1": {
+    "called_name": "Exhibela dos con uno",
+    "description": "Do Exhibela twice normally and then a third time with the lead also turning to the right",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "closed_position",
+    "postcondition": "closed_position",
+    "beat_count": 24
+  },
+  "dame_2_con_2": {
+    "called_name": "Dame dos con dos",
+    "description": "Dame dos, but clap twice on the 1 and 2 when you get to the follow",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 2,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "dame_3": {
+    "called_name": "Dame tres",
+    "description": "Dame, but switch 3 partners",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 3,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "candado": {
+    "called_name": "Candado",
+    "description": "Enchufla, keeping the right hand, then enchufla back the other way, then put both of your hands up and turn to the right",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 16
+  },
+  "kentucky": {
+    "called_name": "Kentucky",
+    "description": "Enchufla keeping the right hand, then enchufla the other way, then put your left hand on their left shoulder, with their left hand, blocking them, then enchufla and turn to the right",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 16
+  },
+  "el_uno": {
+    "called_name": "El uno",
+    "description": "The follow goes in front of the lead, then the follow and lead are doing opposite back-rocks. Can exit with lead putting their right hand up when the follow is going to the left and then turning right or doing El Tren.",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 16
+  },
+  "el_tren": {
+    "called_name": "El tren",
+    "description": "After el uno, when you turn to the right to get out of it, keep your left hand and walk forward. Ends when dile que no is called",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "closed_position",
+    "postcondition": "closed_position",
+    "beat_count": 24,
+    "requires": [
+      "el_uno"
+    ]
+  },
+  "el_dos": {
+    "called_name": "El dos",
+    "description": "The lead goes in front of the follow (enchufla), doing back-rocks. Get out of it by putting your right hand up when the follow is going left and then doing sombrero",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 24
+  },
+  "el_12": {
+    "called_name": "El doce",
+    "description": "El uno and then el dos",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 32
+  },
+  "sombrero": {
+    "called_name": "Sombrero",
+    "description": "Right hand over left, turn your hands clockwise, keeping them up, until you have your right hand on the follow's right shoulder.",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "adios": {
+    "called_name": "Adios",
+    "description": "Use the tension when both you and the follow go backwards and move towards the left of the follow and walk in a circle and then go to the next person in the rueda",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 1,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 8
+  },
+  "adios_con_la_hermana": {
+    "called_name": "Adios con la hermana",
+    "description": "Adios, but you like your sister, so you stay with her instead of switching partners",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 0,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 16
+  },
+  "adios_con_la_prima": {
+    "called_name": "Adios con la prima",
+    "description": "Adios, but you kind of like your cousin, so you do the first part of adios con la hermana, but you switch partners at the end",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 1,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 16
+  },
+  "adios_con_la_familia": {
+    "called_name": "Adios con la familia",
+    "description": "Adios, then enchufla and lock shoulders and then move to the next follow",
+    "level": [
+      "intermediate",
+      1
+    ],
+    "change_partner": 1,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 24
+  },
+  "enchufla_por_arriba": {
+    "called_name": "Enchufla por arriba",
+    "description": "Enchufla, then enchufla yourself and put your hand above you on the 567, then do another enchufla",
+    "level": [
+      "intermediate",
+      2
+    ],
+    "change_partner": 0,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 16
+  },
+  "enchufla_por_abajo": {
+    "called_name": "Enchufla por abajo",
+    "description": "Enchufla, then enchufla yourself and put your hand down on the 567, then enchufla",
+    "level": [
+      "intermediate",
+      2
+    ],
+    "change_partner": 0,
+    "precondition": "open_position",
+    "postcondition": "closed_position",
+    "beat_count": 16
   }
 }

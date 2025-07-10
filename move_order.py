@@ -3,6 +3,8 @@ import random
 import heapq
 from collections import deque
 from tqdm import tqdm
+import numpy as np
+from tabulate import tabulate
 
 class RuedaMoves:
     def __init__(self, filepath):
@@ -51,8 +53,83 @@ class RuedaMoves:
         self.move_difficulty = level
 
     def generate_sequence(self, max_beats, method="astar"):
-        return self.generate_sequence_astar(max_beats)
+        if method == "astar":
+            return self.generate_sequence_astar(max_beats)
+        elif method == "n-gram":
+            return self.generate_sequence_ngram(max_beats)
+        else:
+            raise ValueError(f"Unknown sequence generation method: {method}")
     
+    def get_valid_next_moves(self, move_name, path=None):
+        if move_name == "guapea":
+            return [
+                m_name for m_name, m_data in self.moves.items()
+                if m_data["precondition"] == "open_position"
+                and m_data["level"][0] in self.difficulty_types_allowed
+                and m_data["level"][1] in self.difficulty_levels_allowed
+                and m_data.get("called", True)
+            ]
+
+        path = path or []
+        move_data = self.moves.get(move_name)
+        valid = []
+
+        transitioned_to_open = any(
+            p in self.moves and
+            self.moves[p].get("precondition") == "closed_position" and
+            self.moves[p].get("postcondition") == "open_position"
+            for p in path
+        )
+
+        closed_chain = 0
+        for m in reversed(path):
+            if m not in self.moves:
+                break
+            mdata = self.moves[m]
+            if mdata.get("precondition") == "closed_position" and mdata.get("postcondition") == "closed_position":
+                closed_chain += 1
+            else:
+                break
+
+        at_intermediate_or_higher = any(
+            lvl in self.difficulty_types_allowed
+            for lvl in ["intermediate", "advanced"]
+        )
+
+        for m_name, m_data in self.moves.items():
+            if not m_data.get("called", True):
+                continue
+            if move_data["postcondition"] != m_data["precondition"]:
+                continue
+            if "requires" in m_data and move_name not in m_data["requires"]:
+                continue
+            if m_data["level"][0] not in self.difficulty_types_allowed:
+                continue
+            if m_data["level"][1] not in self.difficulty_levels_allowed:
+                continue
+            if "must_be_followed_by" in move_data and m_name not in move_data["must_be_followed_by"]:
+                continue
+            if path and path[-1] == m_name:
+                continue
+            if m_name == "dile_que_no" and path and path[-1] == "dile_que_no":
+                continue
+            if transitioned_to_open and (
+                m_data.get("precondition") == "closed_position" and
+                m_data.get("postcondition") == "closed_position"
+            ):
+                if not m_name.startswith("exhibela"):
+                    continue
+            if (
+                at_intermediate_or_higher and
+                closed_chain >= 10 and
+                m_data.get("precondition") == "closed_position" and
+                m_data.get("postcondition") == "closed_position"
+            ):
+                continue
+
+            valid.append(m_name)
+
+        return valid
 
     # -------------------------------------------------------------------------
     # generate_sequence_astar(self, max_beats)
@@ -170,76 +247,151 @@ class RuedaMoves:
         pbar.close()
         return []
 
-    def get_valid_next_moves(self, move_name, path=None):
-        if move_name == "guapea":
-            return [
-                m_name for m_name, m_data in self.moves.items()
-                if m_data["precondition"] == "open_position"
-                and m_data["level"][0] in self.difficulty_types_allowed
-                and m_data["level"][1] in self.difficulty_levels_allowed
-                and m_data.get("called", True)
-            ]
+    def generate_sequence_ngram(self, max_beats):
+        n_gram_size = input("Enter n-gram size: ").strip()
+        n_gram_size = int(n_gram_size) if n_gram_size.isdigit() else 3
+        
+        first_move = self.current_move
+        
+        tokenized_moves = {}
+        for token, move in enumerate(self.moves.keys()):
+               tokenized_moves[move] = token
+        
+        probabilities = np.zeros(len(self.moves) * n_gram_size, dtype=np.float32)
+        sequence = [first_move, random.choice(self.get_valid_next_moves(first_move))]
+                
+        def unigram():
+            def move_key(move_name: str) -> str:
+                if move_name.startswith("exhibela"):
+                    return "exhibela"
+                return move_name
 
-        path = path or []
-        move_data = self.moves.get(move_name)
-        valid = []
+            move_keys = {m: move_key(m) for m in self.moves}
+            tokenized_moves = {m: i for i, m in enumerate(self.moves)}
 
-        transitioned_to_open = any(
-            p in self.moves and
-            self.moves[p].get("precondition") == "closed_position" and
-            self.moves[p].get("postcondition") == "open_position"
-            for p in path
-        )
+            closed_key_counts = {}
+            open_key_counts = {}
 
-        closed_chain = 0
-        for m in reversed(path):
-            if m not in self.moves:
-                break
-            mdata = self.moves[m]
-            if mdata.get("precondition") == "closed_position" and mdata.get("postcondition") == "closed_position":
-                closed_chain += 1
-            else:
-                break
+            closed_probabilities = np.zeros(len(self.moves), dtype=np.float32)
+            open_probabilities = np.zeros(len(self.moves), dtype=np.float32)
 
-        at_intermediate_or_higher = any(
-            lvl in self.difficulty_types_allowed
-            for lvl in ["intermediate", "advanced"]
-        )
+            sequence = [self.current_move]
+            curr_move = random.choice(self.get_valid_next_moves(self.current_move))
+            sequence.append(curr_move)
 
-        for m_name, m_data in self.moves.items():
-            if not m_data.get("called", True):
-                continue
-            if move_data["postcondition"] != m_data["precondition"]:
-                continue
-            if "requires" in m_data and move_name not in m_data["requires"]:
-                continue
-            if m_data["level"][0] not in self.difficulty_types_allowed:
-                continue
-            if m_data["level"][1] not in self.difficulty_levels_allowed:
-                continue
-            if "must_be_followed_by" in move_data and m_name not in move_data["must_be_followed_by"]:
-                continue
-            if path and path[-1] == m_name:
-                continue
-            if m_name == "dile_que_no" and path and path[-1] == "dile_que_no":
-                continue
-            if transitioned_to_open and (
-                m_data.get("precondition") == "closed_position" and
-                m_data.get("postcondition") == "closed_position"
-            ):
-                if not m_name.startswith("exhibela"):
-                    continue
-            if (
-                at_intermediate_or_higher and
-                closed_chain >= 10 and
-                m_data.get("precondition") == "closed_position" and
-                m_data.get("postcondition") == "closed_position"
-            ):
-                continue
+            total_beats = 8 + self.moves[curr_move].get("beat_count", 8)
+            iteration = 0
+            
+            difficulty_bias = {
+                "easy": 3.0,
+                "medium": 1.0,
+                "hard": 0.3
+            }
+            dq_bias = difficulty_bias.get(self.move_difficulty, 1.0)
 
-            valid.append(m_name)
+            def is_closed_to_closed(move_name):
+                m = self.moves.get(move_name, {})
+                return m.get("precondition") == "closed_position" and m.get("postcondition") == "closed_position"
 
-        return valid
+            def is_opening_move(move_name):
+                m = self.moves.get(move_name, {})
+                return m.get("postcondition") == "open_position"
+
+            def is_closed_position_move(move_name):
+                m = self.moves.get(move_name, {})
+                return m.get("precondition") == "closed_position"
+
+            in_open_position = False  # tracks if we’ve transitioned to open
+
+            while total_beats <= max_beats:
+                # Check last 3 moves to determine if we’re in a chain of closed->closed
+                in_closed_chain = (
+                    not in_open_position and
+                    all(m in self.moves and is_closed_to_closed(m) for m in sequence[-3:])
+                )
+                context = "closed" if in_closed_chain else "open"
+
+                # Count frequencies for probability
+                key_counts = closed_key_counts if context == "closed" else open_key_counts
+                key_counts.clear()
+                for m in sequence:
+                    if m not in move_keys:
+                        continue
+                    key = move_keys[m]
+                    key_counts[key] = key_counts.get(key, 0) + 1
+
+                all_keys = set(move_keys.values())
+                key_probs = {
+                    key: key_counts.get(key, 0) / len(sequence)
+                    for key in all_keys
+                }
+
+                probabilities = closed_probabilities if context == "closed" else open_probabilities
+                for move, token in tokenized_moves.items():
+                    key = move_keys[move]
+                    prob = key_probs.get(key, 0)
+                    if move == "dile_que_no":
+                        prob *= dq_bias
+                    probabilities[token] = prob
+
+
+                min_value = np.min(probabilities)
+                min_indices = np.where(probabilities == min_value)[0]
+                min_moves = {move for move, token in tokenized_moves.items() if token in min_indices}
+
+                next_possible_moves = self.get_valid_next_moves(curr_move)
+
+                # If we've opened the position, disallow any closed->closed moves
+                if in_open_position:
+                    next_possible_moves = [
+                        m for m in next_possible_moves if not is_closed_to_closed(m)
+                    ]
+
+                # Avoid back-to-back exhibelas
+                last_key = move_key(sequence[-1])
+                min_moves = [
+                    m for m in min_moves
+                    if m in next_possible_moves and not (last_key == "exhibela" and move_key(m) == "exhibela")
+                ]
+
+                if not min_moves:
+                    # fallback: still avoid exhibela repeats
+                    min_moves = [
+                        m for m in next_possible_moves
+                        if not (last_key == "exhibela" and move_key(m) == "exhibela")
+                    ]
+                if not min_moves:
+                    min_moves = next_possible_moves  # last resort
+
+                next_move = random.choice(min_moves)
+                token = tokenized_moves[next_move]
+                chosen_prob = probabilities[token]
+                max_prob = np.max(probabilities)
+                max_moves = [m for m, tok in tokenized_moves.items() if probabilities[tok] == max_prob]
+
+                print(f"[Step {iteration}] Context: {context.upper()} | Chose: {next_move} "
+                    f"| Prob: {chosen_prob:.3f} | Max: {max_prob:.3f} (Move(s): {', '.join(max_moves)})")
+
+                sequence.append(next_move)
+                curr_move = next_move
+                total_beats += self.moves[curr_move]["beat_count"]
+                iteration += 1
+
+                # Update position state
+                if is_opening_move(next_move):
+                    in_open_position = True
+
+                if context == "closed" and not is_closed_to_closed(next_move):
+                    closed_key_counts.clear()
+                    closed_probabilities[:] = 0
+
+            return sequence
+
+        
+        if n_gram_size == 1:
+            return unigram()
+        else:
+            raise ValueError("Not implemented yet")
 
     def choose_next_move(self):
         if self.sequence_queue:

@@ -107,5 +107,7 @@ if __name__ == "__main__":
     duration_seconds = (len(audio) / 1000) / 60
     rueda.song_duration_beats = int(duration_seconds * bpm // 8 * 8)
 
-    timeline = schedule_calls(bpm, first_beat, rueda, method="astar")
+    method = str(input("Which algorithm do you want to use?\nastar\nn-gram\n")).strip()
+    
+    timeline = schedule_calls(bpm, first_beat, rueda, method)
     run_event_based_calls(timeline, song_filename)
